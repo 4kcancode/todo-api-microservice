@@ -6,9 +6,14 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+=======
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/go-cmp/cmp"
@@ -20,6 +25,12 @@ import (
 	"github.com/MarioCarrion/todo-api/internal/rest"
 	"github.com/MarioCarrion/todo-api/internal/rest/resttesting"
 )
+
+func TestMain(m *testing.M) {
+	gin.SetMode(gin.TestMode)
+
+	os.Exit(m.Run())
+}
 
 func TestTasks_Delete(t *testing.T) {
 	t.Parallel()
@@ -76,6 +87,8 @@ func TestTasks_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			router := gin.New()
+=======
 			router := newRouter()
 			svc := &resttesting.FakeTaskService{}
 			tt.setup(svc)
@@ -181,6 +194,8 @@ func TestTasks_Post(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			router := gin.New()
+=======
 			router := newRouter()
 			svc := &resttesting.FakeTaskService{}
 			tt.setup(svc)
@@ -277,6 +292,8 @@ func TestTasks_Read(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			router := gin.New()
+=======
 			router := newRouter()
 			svc := &resttesting.FakeTaskService{}
 			tt.setup(svc)
@@ -386,6 +403,8 @@ func TestTasks_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			router := gin.New()
+=======
 			router := newRouter()
 			svc := &resttesting.FakeTaskService{}
 			tt.setup(svc)
@@ -413,10 +432,13 @@ type test struct {
 	target   interface{}
 }
 
+func doRequest(router *gin.Engine, req *http.Request) *http.Response {
+=======
 func doRequest(router *echo.Echo, req *http.Request) *http.Response {
 	req.Header.Add("content-type", "application/json")
 =======
 func doRequest(router *chi.Mux, req *http.Request) *http.Response {
+
 	rr := httptest.NewRecorder()
 
 	rr := httptest.NewRecorder()

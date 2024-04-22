@@ -4,10 +4,14 @@ import (
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
+
+	"github.com/gin-gonic/gin"
+=======
 	"github.com/ghodss/yaml"
 	"github.com/labstack/echo/v4"
 =======
 	"github.com/go-chi/chi/v5"
+
 )
 
 //go:generate go run ../../cmd/openapi-gen/main.go -path .
@@ -269,6 +273,16 @@ func NewOpenAPI3() openapi3.T {
 	return swagger
 }
 
+func RegisterOpenAPI(router *gin.Engine) {
+	swagger := NewOpenAPI3()
+
+	router.GET("/openapi3.json", func(c *gin.Context) {
+		c.JSON(http.StatusOK, &swagger)
+	})
+
+	router.GET("/openapi3.yaml", func(c *gin.Context) {
+		c.YAML(http.StatusOK, &swagger)
+=======
 func RegisterOpenAPI(router *echo.Echo) {
 	swagger := NewOpenAPI3()
 

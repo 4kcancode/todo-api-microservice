@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+=======
 	"github.com/go-chi/render"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/labstack/echo/v4"
@@ -20,6 +22,8 @@ type ErrorResponse struct {
 	Validations validation.Errors `json:"validations,omitempty"`
 }
 
+func renderErrorResponse(router *gin.Context, msg string, err error) {
+=======
 func HTTPErrorHandler(err error, ctx echo.Context) {
 	resp := ErrorResponse{Error: err.Error()}
 =======
@@ -51,6 +55,8 @@ func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err
 	}
 
 	if err != nil {
+		_, span := otel.Tracer(otelName).Start(router, "renderErrorResponse")
+=======
 		_, span := otel.Tracer(otelName).Start(ctx.Request().Context(), "renderErrorResponse")
 =======
 		_, span := otel.Tracer(otelName).Start(r.Context(), "renderErrorResponse")
@@ -60,6 +66,8 @@ func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err
 	}
 
 	// XXX fmt.Printf("Error: %v\n", err)
+	router.JSON(status, resp)
+=======
 
 	_ = ctx.JSON(status, resp)
 =======
