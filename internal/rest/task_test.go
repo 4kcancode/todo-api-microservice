@@ -9,9 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/labstack/echo/v4"
+=======
 
 	"github.com/MarioCarrion/todo-api/internal"
 	"github.com/MarioCarrion/todo-api/internal/rest"
@@ -36,7 +39,7 @@ func TestTasks_Delete(t *testing.T) {
 	}{
 		{
 			"OK: 200",
-			func(s *resttesting.FakeTaskService) {},
+			func(_ *resttesting.FakeTaskService) {},
 			output{
 				http.StatusOK,
 				&struct{}{},
@@ -70,8 +73,6 @@ func TestTasks_Delete(t *testing.T) {
 	//-
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -177,8 +178,6 @@ func TestTasks_Post(t *testing.T) {
 	//-
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -275,8 +274,6 @@ func TestTasks_Read(t *testing.T) {
 	//-
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -321,7 +318,7 @@ func TestTasks_Update(t *testing.T) {
 	}{
 		{
 			"OK: 200",
-			func(s *resttesting.FakeTaskService) {},
+			func(_ *resttesting.FakeTaskService) {},
 			func() []byte {
 				b, _ := json.Marshal(&rest.UpdateTasksRequest{
 					Description: "update task",
@@ -386,8 +383,6 @@ func TestTasks_Update(t *testing.T) {
 	//-
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -420,6 +415,9 @@ type test struct {
 
 func doRequest(router *echo.Echo, req *http.Request) *http.Response {
 	req.Header.Add("content-type", "application/json")
+=======
+func doRequest(router *chi.Mux, req *http.Request) *http.Response {
+	rr := httptest.NewRecorder()
 
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -444,6 +442,10 @@ func newRouter() *echo.Echo {
 	r := echo.New()
 	r.HTTPErrorHandler = rest.HTTPErrorHandler
 	r.Debug = false
+=======
+func newRouter() *chi.Mux {
+	r := chi.NewRouter()
+	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	return r
 }

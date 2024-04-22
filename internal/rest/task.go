@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+=======
+	"github.com/go-chi/chi/v5"
 
 	"github.com/MarioCarrion/todo-api/internal"
 )
@@ -41,6 +43,13 @@ func (t *TaskHandler) Register(r *echo.Echo) {
 	r.PUT("/tasks/:id", t.update)
 	r.DELETE("/tasks/:id", t.delete)
 	r.POST("/search/tasks", t.search)
+=======
+func (t *TaskHandler) Register(r *chi.Mux) {
+	r.Post("/tasks", t.create)
+	r.Get(fmt.Sprintf("/tasks/{id:%s}", uuidRegEx), t.task)
+	r.Put(fmt.Sprintf("/tasks/{id:%s}", uuidRegEx), t.update)
+	r.Delete(fmt.Sprintf("/tasks/{id:%s}", uuidRegEx), t.delete)
+  r.Post("/search/tasks", t.search)
 }
 
 // Task is an activity that needs to be completed within a period of time.
@@ -70,6 +79,12 @@ func (t *TaskHandler) create(router echo.Context) error {
 	var req CreateTasksRequest
 	if err := router.Bind(&req); err != nil {
 		return internal.WrapErrorf(err, internal.ErrorCodeInvalidArgument, "json decoder")
+=======
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		renderErrorResponse(w, r, "invalid request",
+			internal.WrapErrorf(err, internal.ErrorCodeInvalidArgument, "json decoder"))
+
+		return
 	}
 
 	task, err := t.svc.Create(router.Request().Context(), internal.CreateParams{
@@ -82,6 +97,13 @@ func (t *TaskHandler) create(router echo.Context) error {
 	}
 
 	return router.JSON(http.StatusCreated,
+=======
+		renderErrorResponse(w, r, "create failed", err)
+
+		return
+	}
+
+	renderResponse(w, r,
 		&CreateTasksResponse{
 			Task: Task{
 				ID:          task.ID,
@@ -94,12 +116,21 @@ func (t *TaskHandler) create(router echo.Context) error {
 
 func (t *TaskHandler) delete(router echo.Context) error {
 	id := router.Param("id")
+=======
+func (t *TaskHandler) delete(w http.ResponseWriter, r *http.Request) {
+	// NOTE: Safe to ignore error, because it's always defined.
+	id := chi.URLParam(r, "id")
+
+	if err := t.svc.Delete(r.Context(), id); err != nil {
+		renderErrorResponse(w, r, "delete failed", err)
 
 	if err := t.svc.Delete(router.Request().Context(), id); err != nil {
 		return internal.WrapErrorf(err, internal.ErrorCodeUnknown, "delete failed")
 	}
 
 	return router.JSON(http.StatusOK, struct{}{})
+=======
+	renderResponse(w, r, struct{}{}, http.StatusOK)
 }
 
 // ReadTasksResponse defines the response returned back after searching one task.
@@ -109,13 +140,23 @@ type ReadTasksResponse struct {
 
 func (t *TaskHandler) task(router echo.Context) error {
 	id := router.Param("id")
-
+=======
+func (t *TaskHandler) task(w http.ResponseWriter, r *http.Request) {
+	// NOTE: Safe to ignore error, because it's always defined.
+	id := chi.URLParam(r, "id")
 	task, err := t.svc.Task(router.Request().Context(), id)
 	if err != nil {
 		return internal.WrapErrorf(err, internal.ErrorCodeUnknown, "find failed")
 	}
 
 	return router.JSON(http.StatusOK,
+=======
+		renderErrorResponse(w, r, "find failed", err)
+
+		return
+	}
+
+	renderResponse(w, r,
 		&ReadTasksResponse{
 			Task: Task{
 				ID:          task.ID,
@@ -144,6 +185,18 @@ func (t *TaskHandler) update(router echo.Context) error {
 	}
 
 	id := router.Param("id")
+=======
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		renderErrorResponse(w, r, "invalid request",
+			internal.WrapErrorf(err, internal.ErrorCodeInvalidArgument, "json decoder"))
+
+		return
+	}
+
+	defer r.Body.Close()
+
+	// NOTE: Safe to ignore error, because it's always defined.
+	id := chi.URLParam(r, "id")
 
 	err := t.svc.Update(router.Request().Context(), id, req.Description, req.Priority.Convert(), req.Dates.Convert(), req.IsDone)
 	if err != nil {
@@ -151,6 +204,13 @@ func (t *TaskHandler) update(router echo.Context) error {
 	}
 
 	return router.JSON(http.StatusOK, struct{}{})
+=======
+		renderErrorResponse(w, r, "update failed", err)
+
+		return
+	}
+
+	renderResponse(w, r, &struct{}{}, http.StatusOK)
 }
 
 // SearchTasksRequest defines the request used for searching tasks.
@@ -174,6 +234,12 @@ func (t *TaskHandler) search(router echo.Context) error {
 	var req SearchTasksRequest
 	if err := router.Bind(&req); err != nil {
 		return internal.WrapErrorf(err, internal.ErrorCodeInvalidArgument, "json decoder")
+=======
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		renderErrorResponse(w, r, "invalid request",
+			internal.WrapErrorf(err, internal.ErrorCodeInvalidArgument, "json decoder"))
+
+		return
 	}
 
 	var priority *internal.Priority
@@ -192,6 +258,10 @@ func (t *TaskHandler) search(router echo.Context) error {
 	})
 	if err != nil {
 		return internal.WrapErrorf(err, internal.ErrorCodeUnknown, "search failed")
+=======
+		renderErrorResponse(w, r, "search failed", err)
+
+		return
 	}
 
 	tasks := make([]Task, len(res.Tasks))
@@ -204,6 +274,8 @@ func (t *TaskHandler) search(router echo.Context) error {
 	}
 
 	return router.JSON(http.StatusOK,
+=======
+	renderResponse(w, r,
 		&SearchTasksResponse{
 			Tasks: tasks,
 			Total: res.Total,
