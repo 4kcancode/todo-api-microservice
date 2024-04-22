@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/render"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 
 	"github.com/MarioCarrion/todo-api/internal"
@@ -19,6 +20,9 @@ type ErrorResponse struct {
 	Validations validation.Errors `json:"validations,omitempty"`
 }
 
+func HTTPErrorHandler(err error, ctx echo.Context) {
+	resp := ErrorResponse{Error: err.Error()}
+=======
 func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err error) {
 	resp := ErrorResponse{Error: msg}
 	status := http.StatusInternalServerError
@@ -32,6 +36,7 @@ func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err
 			status = http.StatusNotFound
 		case internal.ErrorCodeInvalidArgument:
 			status = http.StatusBadRequest
+			resp.Error = "invalid request"
 
 			var verrors validation.Errors
 			if errors.As(ierr, &verrors) {
@@ -40,11 +45,14 @@ func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err
 		case internal.ErrorCodeUnknown:
 			fallthrough
 		default:
+			resp.Error = "internal error"
 			status = http.StatusInternalServerError
 		}
 	}
 
 	if err != nil {
+		_, span := otel.Tracer(otelName).Start(ctx.Request().Context(), "renderErrorResponse")
+=======
 		_, span := otel.Tracer(otelName).Start(r.Context(), "renderErrorResponse")
 		defer span.End()
 
@@ -53,6 +61,8 @@ func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err
 
 	// XXX fmt.Printf("Error: %v\n", err)
 
+	_ = ctx.JSON(status, resp)
+=======
 	render.Status(r, status)
 	render.JSON(w, r, &resp)
 }

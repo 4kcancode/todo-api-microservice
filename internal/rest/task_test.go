@@ -13,6 +13,8 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/labstack/echo/v4"
+=======
 
 	"github.com/MarioCarrion/todo-api/internal"
 	"github.com/MarioCarrion/todo-api/internal/rest"
@@ -242,17 +244,15 @@ func TestTasks_Read(t *testing.T) {
 			},
 		},
 		{
-			"OK: 200",
+			"ERR: 404",
 			func(s *resttesting.FakeTaskService) {
 				s.TaskReturns(internal.Task{},
 					internal.NewErrorf(internal.ErrorCodeNotFound, "not found"))
 			},
 			output{
 				http.StatusNotFound,
-				&rest.ErrorResponse{
-					Error: "find failed",
-				},
-				&rest.ErrorResponse{},
+				&struct{}{},
+				&struct{}{},
 			},
 		},
 		{
@@ -413,9 +413,13 @@ type test struct {
 	target   interface{}
 }
 
+func doRequest(router *echo.Echo, req *http.Request) *http.Response {
+	req.Header.Add("content-type", "application/json")
+=======
 func doRequest(router *chi.Mux, req *http.Request) *http.Response {
 	rr := httptest.NewRecorder()
 
+	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
 	return rr.Result()
@@ -434,6 +438,11 @@ func assertResponse(t *testing.T, res *http.Response, test test) {
 	}
 }
 
+func newRouter() *echo.Echo {
+	r := echo.New()
+	r.HTTPErrorHandler = rest.HTTPErrorHandler
+	r.Debug = false
+=======
 func newRouter() *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(render.SetContentType(render.ContentTypeJSON))
