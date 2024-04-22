@@ -5,7 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+=======
+	"github.com/go-chi/render"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 
 	"github.com/MarioCarrion/todo-api/internal"
@@ -20,6 +23,11 @@ type ErrorResponse struct {
 }
 
 func renderErrorResponse(router *gin.Context, msg string, err error) {
+=======
+func HTTPErrorHandler(err error, ctx echo.Context) {
+	resp := ErrorResponse{Error: err.Error()}
+=======
+func renderErrorResponse(w http.ResponseWriter, r *http.Request, msg string, err error) {
 	resp := ErrorResponse{Error: msg}
 	status := http.StatusInternalServerError
 
@@ -32,6 +40,7 @@ func renderErrorResponse(router *gin.Context, msg string, err error) {
 			status = http.StatusNotFound
 		case internal.ErrorCodeInvalidArgument:
 			status = http.StatusBadRequest
+			resp.Error = "invalid request"
 
 			var verrors validation.Errors
 			if errors.As(ierr, &verrors) {
@@ -40,12 +49,17 @@ func renderErrorResponse(router *gin.Context, msg string, err error) {
 		case internal.ErrorCodeUnknown:
 			fallthrough
 		default:
+			resp.Error = "internal error"
 			status = http.StatusInternalServerError
 		}
 	}
 
 	if err != nil {
 		_, span := otel.Tracer(otelName).Start(router, "renderErrorResponse")
+=======
+		_, span := otel.Tracer(otelName).Start(ctx.Request().Context(), "renderErrorResponse")
+=======
+		_, span := otel.Tracer(otelName).Start(r.Context(), "renderErrorResponse")
 		defer span.End()
 
 		span.RecordError(err)
@@ -53,4 +67,15 @@ func renderErrorResponse(router *gin.Context, msg string, err error) {
 
 	// XXX fmt.Printf("Error: %v\n", err)
 	router.JSON(status, resp)
+=======
+
+	_ = ctx.JSON(status, resp)
+=======
+	render.Status(r, status)
+	render.JSON(w, r, &resp)
+}
+
+func renderResponse(w http.ResponseWriter, r *http.Request, res interface{}, status int) {
+	render.Status(r, status)
+	render.JSON(w, r, res)
 }

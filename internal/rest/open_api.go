@@ -4,7 +4,14 @@ import (
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3"
+
 	"github.com/gin-gonic/gin"
+=======
+	"github.com/ghodss/yaml"
+	"github.com/labstack/echo/v4"
+=======
+	"github.com/go-chi/chi/v5"
+
 )
 
 //go:generate go run ../../cmd/openapi-gen/main.go -path .
@@ -34,6 +41,8 @@ func NewOpenAPI3() openapi3.T {
 			},
 		},
 	}
+
+	swagger.Components = &openapi3.Components{}
 
 	swagger.Components.Schemas = openapi3.Schemas{
 		"Priority": openapi3.NewSchemaRef("",
@@ -273,5 +282,30 @@ func RegisterOpenAPI(router *gin.Engine) {
 
 	router.GET("/openapi3.yaml", func(c *gin.Context) {
 		c.YAML(http.StatusOK, &swagger)
+=======
+func RegisterOpenAPI(router *echo.Echo) {
+	swagger := NewOpenAPI3()
+
+	router.GET("/openapi3.json", func(r echo.Context) error {
+		return r.JSON(http.StatusOK, &swagger)
+	})
+=======
+func RegisterOpenAPI(router *chi.Mux) {
+	swagger := NewOpenAPI3()
+
+	router.Get("/openapi3.json", func(w http.ResponseWriter, r *http.Request) {
+		renderResponse(w, r, &swagger, http.StatusOK)
+	})
+
+	router.Get("/openapi3.yaml", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/x-yaml")
+
+	router.GET("/openapi3.yaml", func(r echo.Context) error {
+		data, _ := yaml.Marshal(&swagger)
+		return r.Blob(http.StatusOK, "application/x-yaml", data)
+=======
+		_, _ = w.Write(data)
+
+		w.WriteHeader(http.StatusOK)
 	})
 }
